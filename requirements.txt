@@ -1,24 +1,35 @@
-fastapi==0.111.0
-uvicorn==0.29.0
-sqlalchemy==2.0.30
-psycopg2-binary==2.9.9
-python-dotenv==1.0.1
-pydantic==2.7.1
-groq==0.9.0
-ultralytics==8.2.0
-torch==2.3.0
-torchvision==0.18.0
-prophet==1.1.5
-ortools==9.10.4067
+# Core
 streamlit==1.35.0
 plotly==5.22.0
 pandas==2.2.2
 numpy==1.26.4
 pillow==10.3.0
 httpx==0.27.0
-python-multipart==0.0.9
-alembic==1.13.1
-asyncpg==0.29.0
-streamlit-extras==0.4.2
+python-dotenv==1.0.1
+requests
+
+# Maps
 folium==0.16.0
 streamlit-folium==0.20.0
+
+# Camera (optional - comment out if deploy fails)
+streamlit-webrtc==0.47.6
+aiortc==1.9.0
+av==13.1.0
+opencv-python-headless==4.10.0.84
+
+# API deps (only needed locally, but harmless to list)
+fastapi==0.111.0
+uvicorn==0.29.0
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+pydantic==2.7.1
+groq==0.9.0
+python-multipart==0.0.9
+
+# Heavy ML - Streamlit Cloud may time out installing these
+# ultralytics==8.2.0
+# torch==2.3.0
+# torchvision==0.18.0
+# prophet==1.1.5
+# ortools==9.10.4067
