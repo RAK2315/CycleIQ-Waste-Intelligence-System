@@ -209,27 +209,52 @@ with col_main:
 
                 # Capture & save button
                 if st.button("Capture & Save Classification"):
-                    with ctx.video_processor._lock:
-                        live_res = ctx.video_processor.results
+                    try:
+                        with ctx.video_processor._lock:
+                            live_res = dict(ctx.video_processor.results) if ctx.video_processor.results else None
+                    except Exception:
+                        live_res = None
+
                     if live_res:
-                        # Convert to our 6-category format
                         bio = live_res.get("biodegradable", 0)
                         rec = live_res.get("recyclable", 0)
                         haz = live_res.get("hazardous", 0)
                         total = bio + rec + haz or 100
-                        payload = {
-                            "organic_pct": round(bio * 0.7, 2),
-                            "plastic_pct": round(rec * 0.5, 2),
-                            "paper_pct": round(rec * 0.3, 2),
-                            "metal_pct": round(rec * 0.2, 2),
-                            "glass_pct": 0,
-                            "hazardous_pct": round(haz, 2),
-                            "confidence_score": 0.88,
-                            "biodegradable_pct": bio,
-                            "recyclable_pct": rec,
-                        }
-                        st.session_state.live_capture = payload
-                        st.success("Classification captured and saved!")
+
+                        # Build a minimal PNG to send to the classify endpoint
+                        import numpy as np
+                        from PIL import Image
+                        import io as _io
+                        # Create a small dummy image so the endpoint accepts it
+                        dummy = Image.fromarray(np.zeros((10,10,3), dtype=np.uint8))
+                        buf = _io.BytesIO()
+                        dummy.save(buf, format="PNG")
+                        buf.seek(0)
+
+                        try:
+                            resp = requests.post(
+                                f"{API}/waste/classify",
+                                files={"file": ("live_capture.png", buf, "image/png")},
+                                params={
+                                    "ward_id": selected_point.get("ward_id", "W001"),
+                                    "collection_point_id": selected_point.get("id", ""),
+                                    "organic_pct": round(bio * 0.7, 2),
+                                    "plastic_pct": round(rec * 0.5, 2),
+                                    "paper_pct": round(rec * 0.3, 2),
+                                    "metal_pct": round(rec * 0.2, 2),
+                                    "glass_pct": 0,
+                                    "hazardous_pct": round(haz, 2),
+                                },
+                                timeout=10
+                            )
+                            result = resp.json()
+                            st.session_state.last_result = result
+                            pts = result.get("points_awarded_to_ward", 0)
+                            st.success(f"Saved! Segregation: {result.get('segregation_label','—')} · {pts} pts awarded to ward")
+                        except Exception as e:
+                            st.error(f"API error: {e}")
+                    else:
+                        st.warning("No classification data yet — point camera at waste and wait a moment.")
 
         except ImportError:
             st.markdown("""

@@ -20,7 +20,8 @@ def get_optimized_routes(num_trucks: int = 3, db: Session = Depends(get_db)):
     for r in routes:
         normalized_seq = [
             {"name": s["name"], "ward": s["ward_name"],
-             "lat": s["latitude"], "lon": s["longitude"]}
+             "lat": s["latitude"], "lon": s["longitude"],
+             "fill_level": s.get("current_fill_level", s.get("fill_level", 70))}
             for s in r["collection_sequence"]
         ]
         route = OptimizedRoute(

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File
+from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
@@ -41,12 +42,34 @@ async def classify_image(
     file: UploadFile = File(...),
     collection_point_id: str = "",
     ward_id: str = "W001",
+    # Optional overrides from live camera — if provided, skip CV inference
+    organic_pct: Optional[float] = None,
+    plastic_pct: Optional[float] = None,
+    paper_pct: Optional[float] = None,
+    metal_pct: Optional[float] = None,
+    glass_pct: Optional[float] = None,
+    hazardous_pct: Optional[float] = None,
     db: Session = Depends(get_db)
 ):
     image_bytes = await file.read()
-    result = classifier.classify_image(image_bytes)
 
-    # Strip non-DB fields before saving
+    # Live camera sends pre-computed pcts — use them directly
+    if organic_pct is not None:
+        result = {
+            "organic_pct": organic_pct,
+            "plastic_pct": plastic_pct or 0.0,
+            "paper_pct": paper_pct or 0.0,
+            "metal_pct": metal_pct or 0.0,
+            "glass_pct": glass_pct or 0.0,
+            "hazardous_pct": hazardous_pct or 0.0,
+            "total_volume_liters": 100.0,
+            "confidence_score": 0.88,
+            "mode": "live-camera",
+            "note": "Captured from live webcam stream"
+        }
+    else:
+        result = classifier.classify_image(image_bytes)
+
     db_fields = {
         "organic_pct": result["organic_pct"],
         "plastic_pct": result["plastic_pct"],
@@ -64,21 +87,18 @@ async def classify_image(
         **db_fields
     )
 
-    # Calculate segregation score and award citizen points
     segregation_score = _calc_segregation_score(result)
     result["segregation_score"] = segregation_score
     result["segregation_label"] = _score_label(segregation_score)
 
-    # Award points to citizens in this ward based on segregation quality
     points_awarded = 0
     if segregation_score >= 70:
         points_awarded = int(segregation_score / 10) * 10
         citizens = db.query(Citizen).filter(Citizen.ward_id == ward_id).all()
-        for citizen in citizens[:5]:  # top 5 citizens in ward
+        for citizen in citizens[:5]:
             citizen.total_points += points_awarded // 5
             citizen.tier = _get_tier(citizen.total_points)
 
-    # Update collection point fill level
     if collection_point_id:
         point = db.query(CollectionPoint).filter(CollectionPoint.id == collection_point_id).first()
         if point:
@@ -93,13 +113,11 @@ async def classify_image(
     return result
 
 def _calc_segregation_score(result: dict) -> float:
-    """Score based on how cleanly waste is segregated (single dominant category = better)."""
     pcts = [result.get("organic_pct",0), result.get("plastic_pct",0),
             result.get("paper_pct",0), result.get("metal_pct",0),
             result.get("glass_pct",0), result.get("hazardous_pct",0)]
     dominant = max(pcts)
     hazardous = result.get("hazardous_pct", 0)
-    # High dominant + low hazardous = good segregation
     score = (dominant / 100) * 80 + (1 - hazardous / 100) * 20
     return round(score, 1)
 

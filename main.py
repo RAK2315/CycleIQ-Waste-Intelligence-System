@@ -36,8 +36,16 @@ async def iot_simulation_loop():
             # Randomly update ~20% of points each cycle (simulating real IoT events)
             sample = random.sample(points, max(1, len(points) // 5))
             for point in sample:
-                delta = random.uniform(-5, 15)  # bins fill up more than they empty
-                point.current_fill_level = max(5, min(100, point.current_fill_level + delta))
+                if point.current_fill_level > 80:
+                    # Simulate truck collection - drain high bins
+                    delta = random.uniform(-40, -20)
+                elif point.current_fill_level > 50:
+                    # Moderate fill - slow increase
+                    delta = random.uniform(-3, 8)
+                else:
+                    # Low fill - gradual increase
+                    delta = random.uniform(1, 6)
+                point.current_fill_level = max(5, min(98, point.current_fill_level + delta))
             db.commit()
             db.close()
         except Exception as e:
@@ -58,6 +66,13 @@ async def seed_data():
             print("Seeding database...")
             for cp in generate_collection_points():
                 db.add(CollectionPoint(id=str(uuid.uuid4()), **cp))
+            db.commit()
+        else:
+            # Reset fill levels to realistic values on each restart
+            import numpy as np
+            pts = db.query(CollectionPoint).all()
+            for pt in pts:
+                pt.current_fill_level = round(np.random.uniform(10, 85), 1)
             db.commit()
 
         if db.query(WasteHistory).count() == 0:
