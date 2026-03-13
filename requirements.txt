@@ -1,26 +1,30 @@
-# Frontend essentials
-streamlit==1.35.0
-plotly==5.22.0
-pandas>=2.2.2 
-numpy==1.26.4
-pillow==10.3.0
-httpx==0.27.0
-python-dotenv==1.0.1
-requests
-folium==0.16.0
-streamlit-folium==0.20.0
-
-# Camera (webrtc) - let pip resolve av version automatically
-streamlit-webrtc==0.47.6
-aiortc==1.9.0
-av
-opencv-python-headless==4.10.0.84
-
-# API deps
+# Core API
 fastapi==0.111.0
 uvicorn==0.29.0
 sqlalchemy==2.0.30
 psycopg2-binary==2.9.9
 pydantic==2.7.1
-groq==0.9.0
 python-multipart==0.0.9
+python-dotenv==1.0.1
+requests
+httpx==0.27.0
+groq==0.9.0
+
+# Data
+pandas>=2.2.2
+numpy>=1.26.4
+pillow>=10.3.0
+
+# ML
+ultralytics
+prophet
+
+# Streamlit + UI
+streamlit==1.35.0
+plotly==5.22.0
+folium==0.16.0
+streamlit-folium==0.20.0
+streamlit-webrtc==0.47.6
+aiortc==1.9.0
+av
+opencv-python-headless>=4.10.0.84
