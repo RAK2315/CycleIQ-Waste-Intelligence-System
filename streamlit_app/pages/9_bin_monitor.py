@@ -1,6 +1,4 @@
 import streamlit as st
-import cv2
-import numpy as np
 import tempfile
 import os
 import requests as _req
@@ -122,6 +120,8 @@ if not uploaded_video:
 
 # ── Process video ────────────────────────────────────────────────────────────
 if st.button("▶ Analyse Video", use_container_width=False):
+    import cv2
+    import numpy as np
 
     # Save uploaded video to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
