@@ -50,9 +50,21 @@ with col_ctrl:
     if st.button("Load Today's Routes from Optimizer"):
         with st.spinner("Fetching optimized routes..."):
             try:
-                r = requests.get(f"{API}/routes/optimize?num_trucks={num_trucks}", timeout=30)
-                st.session_state.driver_routes = r.json()
-                st.session_state.driver_completed = {}
+                # First try to get latest saved routes
+                r = requests.get(f"{API}/routes/latest", timeout=30)
+                data = r.json()
+                if data and isinstance(data, list) and len(data) > 0:
+                    st.session_state.driver_routes = data
+                    st.session_state.driver_completed = {}
+                    st.success("Loaded latest optimized routes.")
+                else:
+                    # No saved routes yet — run optimizer
+                    r = requests.get(f"{API}/routes/optimize?num_trucks={num_trucks}", timeout=30)
+                    data = r.json()
+                    if isinstance(data, list):
+                        st.session_state.driver_routes = data
+                        st.session_state.driver_completed = {}
+                        st.success("Generated new routes.")
             except Exception as e:
                 st.error(f"Could not load routes: {e}")
 

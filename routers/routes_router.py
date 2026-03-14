@@ -47,6 +47,30 @@ def get_optimized_routes(num_trucks: int = 3, db: Session = Depends(get_db)):
     db.commit()
     return saved
 
+@router.get("/latest")
+def get_latest_routes(db: Session = Depends(get_db)):
+    """Returns the most recently optimized routes — same data driver view uses."""
+    from sqlalchemy import func
+    # Get the most recent batch (routes generated together have close timestamps)
+    latest = db.query(OptimizedRoute).order_by(OptimizedRoute.route_date.desc()).first()
+    if not latest:
+        return []
+    # Get all routes from the same batch (within 5 seconds of the latest)
+    from datetime import timedelta
+    cutoff = latest.route_date - timedelta(seconds=5)
+    routes = db.query(OptimizedRoute).filter(
+        OptimizedRoute.route_date >= cutoff
+    ).order_by(OptimizedRoute.truck_id).all()
+    return [{
+        "truck_id": r.truck_id,
+        "collection_sequence": r.collection_sequence,
+        "total_distance_km": r.total_distance_km,
+        "estimated_time_minutes": r.estimated_time_minutes,
+        "estimated_emissions_kg": r.estimated_emissions_kg,
+        "num_stops": len(r.collection_sequence) if r.collection_sequence else 0,
+        "status": r.status
+    } for r in routes]
+
 @router.get("/stats")
 def get_route_stats(db: Session = Depends(get_db)):
     from sqlalchemy import func

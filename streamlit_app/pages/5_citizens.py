@@ -66,13 +66,28 @@ st.markdown("""
 
 try:
     stats = load_stats()
+except:
+    stats = {"total_citizens": 0, "total_points_awarded": 0, "avg_points": 0, "top_citizen": "—", "tier_distribution": {}}
+
+try:
     leaderboard = load_leaderboard()
+except:
+    leaderboard = []
+
+try:
     wards = load_wards()
+except:
+    wards = []
+
+try:
     ward_summary = load_ward_summary()
+except:
+    ward_summary = []
+
+try:
     points_data = load_points()
 except:
-    st.error("API not reachable.")
-    st.stop()
+    points_data = []
 
 ward_id_to_name = {row["ward_id"]: row["ward_name"] for row in points_data}
 
