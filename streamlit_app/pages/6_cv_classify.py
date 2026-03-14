@@ -205,6 +205,8 @@ with col_main:
                     "iceServers": [
                         {"urls": ["stun:stun.l.google.com:19302"]},
                         {"urls": ["stun:stun1.l.google.com:19302"]},
+                        {"urls": ["stun:stun2.l.google.com:19302"]},
+                        {"urls": ["stun:stun3.l.google.com:19302"]},
                         {
                             "urls": ["turn:openrelay.metered.ca:80"],
                             "username": "openrelayproject",
@@ -212,6 +214,11 @@ with col_main:
                         },
                         {
                             "urls": ["turn:openrelay.metered.ca:443"],
+                            "username": "openrelayproject",
+                            "credential": "openrelayproject",
+                        },
+                        {
+                            "urls": ["turn:openrelay.metered.ca:443?transport=tcp"],
                             "username": "openrelayproject",
                             "credential": "openrelayproject",
                         },
@@ -297,9 +304,9 @@ with col_main:
         uploaded = st.file_uploader("Upload image", type=["jpg","jpeg","png","webp"],
                                      label_visibility="collapsed")
         if uploaded:
-            from PIL import Image
-            img = Image.open(uploaded)
-            st.image(img, width=None, caption="Uploaded image")
+            img_bytes = uploaded.read()
+            st.image(img_bytes, use_container_width=True, caption="Uploaded image")
+            uploaded.seek(0)
 
         if st.button("Classify Waste") and uploaded:
             with st.spinner("Running YOLOv8 inference..."):
