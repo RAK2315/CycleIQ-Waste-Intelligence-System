@@ -201,7 +201,22 @@ with col_main:
             ctx = webrtc_streamer(
                 key="waste-classifier",
                 video_processor_factory=WasteVideoProcessor,
-                rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
+                rtc_configuration=RTCConfiguration({
+                    "iceServers": [
+                        {"urls": ["stun:stun.l.google.com:19302"]},
+                        {"urls": ["stun:stun1.l.google.com:19302"]},
+                        {
+                            "urls": ["turn:openrelay.metered.ca:80"],
+                            "username": "openrelayproject",
+                            "credential": "openrelayproject",
+                        },
+                        {
+                            "urls": ["turn:openrelay.metered.ca:443"],
+                            "username": "openrelayproject",
+                            "credential": "openrelayproject",
+                        },
+                    ]
+                }),
                 media_stream_constraints={"video": True, "audio": False},
                 async_processing=True,
             )
@@ -284,7 +299,7 @@ with col_main:
         if uploaded:
             from PIL import Image
             img = Image.open(uploaded)
-            st.image(img, use_container_width=True, caption="Uploaded image")
+            st.image(img, width=None, caption="Uploaded image")
 
         if st.button("Classify Waste") and uploaded:
             with st.spinner("Running YOLOv8 inference..."):
