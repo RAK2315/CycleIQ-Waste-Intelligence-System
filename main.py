@@ -8,9 +8,6 @@ import asyncio, random
 load_dotenv()
 
 app = FastAPI(title="CycleIQ API", version="1.0.0")
-@app.head("/api/dashboard/summary")
-async def head_summary():
-    return {}
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
@@ -28,8 +25,7 @@ async def startup():
     asyncio.create_task(iot_simulation_loop())
 
 async def iot_simulation_loop():
-    """Simulates IoT sensors updating bin fill levels every 30 seconds."""
-    await asyncio.sleep(10)  # wait for startup
+    await asyncio.sleep(10)
     from database import SessionLocal
     from models.waste_model import CollectionPoint
     print("IoT simulation loop started — updating fill levels every 30s")
@@ -37,17 +33,13 @@ async def iot_simulation_loop():
         try:
             db = SessionLocal()
             points = db.query(CollectionPoint).all()
-            # Randomly update ~20% of points each cycle (simulating real IoT events)
             sample = random.sample(points, max(1, len(points) // 5))
             for point in sample:
                 if point.current_fill_level > 80:
-                    # Simulate truck collection - drain high bins
                     delta = random.uniform(-40, -20)
                 elif point.current_fill_level > 50:
-                    # Moderate fill - slow increase
                     delta = random.uniform(-3, 8)
                 else:
-                    # Low fill - gradual increase
                     delta = random.uniform(1, 6)
                 point.current_fill_level = max(5, min(98, point.current_fill_level + delta))
             db.commit()
@@ -72,7 +64,6 @@ async def seed_data():
                 db.add(CollectionPoint(id=str(uuid.uuid4()), **cp))
             db.commit()
         else:
-            # Reset fill levels to realistic values on each restart
             import numpy as np
             pts = db.query(CollectionPoint).all()
             for pt in pts:
@@ -115,9 +106,15 @@ async def seed_data():
         db.close()
 
 @app.get("/")
+@app.head("/")
 def root():
     return {"message": "CycleIQ API running", "version": "1.0.0"}
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "healthy"}
+
+@app.head("/api/dashboard/summary")
+async def head_summary():
+    return {}
