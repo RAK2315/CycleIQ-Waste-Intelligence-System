@@ -8,6 +8,10 @@ import asyncio, random
 load_dotenv()
 
 app = FastAPI(title="CycleIQ API", version="1.0.0")
+@app.head("/api/dashboard/summary")
+async def head_summary():
+    return {}
+
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
