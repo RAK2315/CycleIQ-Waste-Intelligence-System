@@ -8,7 +8,6 @@ folium
 streamlit-folium
 streamlit-webrtc
 av
-opencv-python-headless
 python-dotenv
 ultralytics
 rich<14
