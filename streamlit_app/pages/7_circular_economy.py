@@ -28,7 +28,18 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 </style>
 """, unsafe_allow_html=True)
 
-API = "http://localhost:8000/api"
+import os, requests as _req
+
+def _get_api():
+    render = os.getenv("API_URL", "https://cycleiq-api.onrender.com") + "/api"
+    local  = "http://localhost:8000/api"
+    try:
+        _req.get(f"{local}/waste/stats", timeout=2)
+        return local
+    except Exception:
+        return render
+
+API = _get_api()
 
 @st.cache_data(ttl=60)
 def load_ward_summary():
