@@ -86,6 +86,7 @@ with st.sidebar:
     st.page_link("pages/6_cv_classify.py", label="Waste Classifier", icon="📷")
     st.page_link("pages/7_circular_economy.py", label="Circular Economy", icon="♻️")
     st.page_link("pages/8_driver_view.py", label="Driver View", icon="🚛")
+    st.page_link("pages/9_bin_monitor.py", label="Bin Monitor", icon="🎥")
     st.markdown("### System")
     st.markdown("""
     <div style="font-size:0.75rem;color:#6b8f74;line-height:2;">
