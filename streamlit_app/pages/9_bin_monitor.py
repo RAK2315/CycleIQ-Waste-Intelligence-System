@@ -150,6 +150,13 @@ if st.button("▶ Analyse Video", use_container_width=False):
         (3 * frame_w // 4,   frame_w),
     ]
 
+    # Capture baseline frame (empty bins)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    ret, baseline_frame = cap.read()
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    if not ret:
+        baseline_frame = np.zeros((frame_h, frame_w, 3), dtype=np.uint8)
+
     # Tracking state
     events = []          # list of detection events
     bin_counts = [0, 0, 0, 0]       # items correctly in each bin
@@ -290,14 +297,16 @@ if st.button("▶ Analyse Video", use_container_width=False):
         cv2.putText(annotated, hud_text, (12, frame_h - 18),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (74, 222, 128), 2)
 
-        # Estimate fill levels — count non-background pixels in bin zone top area
+        # Estimate fill levels — compare current frame bin zone to baseline (first frame)
         for i, (zx1, zx2) in enumerate(zone_boundaries):
             bin_region = frame[20:int(frame_h * 0.42), zx1+5:zx2-5]
-            gray = cv2.cvtColor(bin_region, cv2.COLOR_BGR2GRAY)
-            # Count pixels that are darker than the empty bin (which is near white/light gray)
-            filled_px = np.sum(gray < 200)
-            total_px = bin_region.shape[0] * bin_region.shape[1]
-            bin_fill_px[i] = min(int(filled_px / total_px * 100 * 1.5), 95)
+            base_region = baseline_frame[20:int(frame_h * 0.42), zx1+5:zx2-5]
+            # Diff against baseline — new objects in bin show up as changed pixels
+            diff = cv2.absdiff(bin_region, base_region)
+            diff_gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+            changed_px = np.sum(diff_gray > 30)
+            total_px = diff_gray.shape[0] * diff_gray.shape[1]
+            bin_fill_px[i] = min(int(changed_px / total_px * 100 * 2.5), 95)
 
         # Store every 15th annotated frame for playback
         if frame_idx % 15 == 0:
