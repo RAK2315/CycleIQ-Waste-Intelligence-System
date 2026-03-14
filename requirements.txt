@@ -1,16 +1,25 @@
-fastapi>=0.111.0
+# Core API
+fastapi==0.111.0
 uvicorn==0.29.0
 sqlalchemy==2.0.30
 psycopg2-binary==2.9.9
-pydantic>=2.9.0
+pydantic==2.7.1
 python-multipart==0.0.9
 python-dotenv==1.0.1
-requests
-httpx>=0.27.0
-groq>=0.9.0
-pandas>=2.2.2
-numpy>=1.26.4
-pillow>=10.3.0
-ultralytics
-prophet
-plotly>=5.22.0
+
+# ML
+numpy==1.26.4
+pandas==2.2.2
+pillow==10.3.0
+scikit-learn==1.4.2
+prophet==1.1.5
+
+# LLM
+groq==0.9.0
+
+# CV - headless for server
+opencv-python-headless==4.10.0.84
+ultralytics==8.2.18
+
+# Route optimizer
+ortools==9.10.4067
