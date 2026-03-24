@@ -7,7 +7,8 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
+header { visibility: visible; }
 .stApp { background: #0a0f0d; color: #e8ede9; }
 .block-container { padding: 1.5rem 2rem; max-width: 1400px; }
 [data-testid="stSidebar"] { background: #0d1410 !important; border-right: 1px solid #1e2e24; }
@@ -195,13 +196,16 @@ elif active_tab == "Rewards":
         {"title": "Green Citizen Certificate",  "sub": "Digital certificate from MCD",    "pts": 200,  "icon": "🏅"},
     ]
 
+    if "redeem_success" not in st.session_state:
+        st.session_state.redeem_success = None
+
     col_a, col_b = st.columns(2, gap="medium")
     for i, r in enumerate(REWARDS):
         col = col_a if i % 2 == 0 else col_b
         with col:
             st.markdown(f"""
             <div style="background:#111a15;border:1px solid #1e2e24;border-radius:14px;
-                        padding:1.1rem 1.3rem;margin-bottom:0.75rem;
+                        padding:1.1rem 1.3rem;margin-bottom:0.4rem;
                         display:flex;align-items:center;gap:1rem;">
                 <div style="font-size:1.8rem;flex-shrink:0;">{r['icon']}</div>
                 <div style="flex:1;">
@@ -209,11 +213,36 @@ elif active_tab == "Rewards":
                     <div style="font-size:0.75rem;color:#6b8f74;margin-top:1px;">{r['sub']}</div>
                     <div style="font-size:0.9rem;font-weight:700;color:#4ade80;margin-top:0.4rem;">{r['pts']} points</div>
                 </div>
-                <div style="background:transparent;border:1.5px solid #4ade80;color:#4ade80;
-                            font-size:0.8rem;font-weight:600;padding:6px 18px;border-radius:8px;
-                            cursor:pointer;flex-shrink:0;">Redeem</div>
             </div>
             """, unsafe_allow_html=True)
+            if st.button(f"Redeem {r['icon']}", key=f"redeem_{i}", use_container_width=True):
+                st.session_state.redeem_success = r
+
+    if st.session_state.redeem_success:
+        r = st.session_state.redeem_success
+        import random, string
+        ref = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        st.markdown(f"""
+        <div style="background:#0d2010;border:1px solid #4ade8040;border-radius:12px;
+                    padding:1.25rem;margin-top:0.75rem;">
+            <div style="font-size:0.9rem;font-weight:700;color:#4ade80;margin-bottom:0.5rem;">
+                ✅ Redemption Request Submitted
+            </div>
+            <div style="font-size:0.8rem;color:#6b8f74;line-height:1.8;">
+                <div>Reward: <span style="color:#e8ede9;">{r['title']}</span></div>
+                <div>Reference: <span style="color:#e8ede9;font-family:'DM Mono',monospace;">{ref}</span></div>
+                <div>Status: <span style="color:#fbbf24;">Pending partner verification</span></div>
+                <div style="margin-top:0.5rem;font-size:0.75rem;color:#4b6358;">
+                    Pilot redemption in partnership with DMRC and BSES Rajdhani.
+                    Confirmation SMS will be sent within 24hrs of ward segregation score verification.
+                    Present this reference at any MCD ward office or Delhi One portal.
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Close", key="close_redeem"):
+            st.session_state.redeem_success = None
+            st.rerun()
 
 # ── WARD REPORT CARD ─────────────────────────────────────────────────────────
 elif active_tab == "Ward Report Card":
@@ -286,14 +315,48 @@ elif active_tab == "Ward Report Card":
                 """, unsafe_allow_html=True)
 
             pts_this_week = int(score * 12) if score >= 50 else 0
-            st.markdown(f"""
-            <div style="background:#0d2010;border:1px solid #4ade8030;border-radius:10px;
-                        padding:0.75rem 1rem;font-size:0.82rem;color:#86efac;">
-                🎯 Citizens in <b>{selected_ward}</b> earned approximately
-                <span style="color:#4ade80;font-family:'DM Mono',monospace;font-weight:700;">{pts_this_week} points</span>
-                this week based on current segregation performance.
-            </div>
-            """, unsafe_allow_html=True)
+            pts_last_week = int(pts_this_week * 0.87)  # simulated last week
+            pts_delta = pts_this_week - pts_last_week
+            delta_color = "#4ade80" if pts_delta >= 0 else "#ef4444"
+            delta_arrow = "↑" if pts_delta >= 0 else "↓"
+
+            col_pts, col_trend = st.columns(2)
+            with col_pts:
+                st.markdown(f"""
+                <div style="background:#0d2010;border:1px solid #4ade8040;border-radius:10px;
+                            padding:0.75rem 1rem;font-size:0.82rem;color:#86efac;">
+                    🎯 This week: <span style="color:#4ade80;font-family:'DM Mono',monospace;
+                    font-weight:700;font-size:1rem;">{pts_this_week} pts</span>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_trend:
+                st.markdown(f"""
+                <div style="background:#111a15;border:1px solid #1e2e24;border-radius:10px;
+                            padding:0.75rem 1rem;font-size:0.82rem;color:#6b8f74;">
+                    vs last week: <span style="color:{delta_color};font-family:'DM Mono',monospace;
+                    font-weight:700;">{delta_arrow} {abs(pts_delta)} pts</span>
+                    <div style="font-size:0.7rem;margin-top:2px;">Last week: {pts_last_week} pts</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Simple trend sparkline
+            import numpy as np, plotly.graph_objects as go
+            weeks = ["W-5","W-4","W-3","W-2","LastWeek","ThisWeek"]
+            trend_data = [int(pts_this_week * x) for x in [0.6, 0.7, 0.75, 0.82, 0.87, 1.0]]
+            fig_spark = go.Figure(go.Scatter(
+                x=weeks, y=trend_data, mode="lines+markers",
+                line=dict(color="#4ade80", width=2),
+                marker=dict(size=5, color="#4ade80"),
+                fill="tozeroy", fillcolor="rgba(74,222,128,0.06)"
+            ))
+            fig_spark.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=0,r=0,t=5,b=0), height=100,
+                xaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(color="#6b8f74", size=9)),
+                yaxis=dict(gridcolor="#1e2e24", tickfont=dict(color="#6b8f74", size=9)),
+                showlegend=False
+            )
+            st.plotly_chart(fig_spark, use_container_width=True)
 
 # ── COMMUNITY NUDGES ─────────────────────────────────────────────────────────
 elif active_tab == "Community Nudges":

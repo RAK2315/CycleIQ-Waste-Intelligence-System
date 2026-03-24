@@ -3,11 +3,16 @@ import tempfile
 import os
 import requests as _req
 
+
+
+
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
+header { visibility: visible; }
 .stApp { background: #0a0f0d; color: #e8ede9; }
 .block-container { padding: 1.5rem 2rem; max-width: 1400px; }
 [data-testid="stSidebar"] { background: #0d1410 !important; border-right: 1px solid #1e2e24; }
@@ -45,10 +50,10 @@ st.markdown("""
 
 # ── Bin configuration ────────────────────────────────────────────────────────
 BIN_CONFIG = [
-    {"label": "Plastic & Metal",    "color": (96, 165, 250),   "hex": "#60a5fa", "emoji": "🔵"},
-    {"label": "Glass & Ceramic",    "color": (52, 211, 153),   "hex": "#34d399", "emoji": "🟢"},
-    {"label": "Paper & Cardboard",  "color": (251, 191, 36),   "hex": "#fbbf24", "emoji": "🟡"},
-    {"label": "Hazardous & E-Waste","color": (248, 113, 113),  "hex": "#f87171", "emoji": "🔴"},
+    {"label": "Plastic & Metal",    "color": (96, 165, 250),   "hex": "#60a5fa", "emoji": "🔵", "top_offset": 0.08},
+    {"label": "Glass & Ceramic",    "color": (52, 211, 153),   "hex": "#34d399", "emoji": "🟢", "top_offset": 0.02},
+    {"label": "Hazardous & E-Waste","color": (248, 113, 113),  "hex": "#f87171", "emoji": "🔴", "top_offset": 0.02},
+    {"label": "Paper & Cardboard",  "color": (251, 191, 36),   "hex": "#fbbf24", "emoji": "🟡", "top_offset": 0.08},
 ]
 
 # YOLO class → (correct bin index, display name)
@@ -62,15 +67,15 @@ YOLO_WASTE_MAP = {
     "wine glass":   (1, "Glass"),
     "vase":         (1, "Glass Vase"),
     "bowl":         (1, "Glass Bowl"),
-    "book":         (2, "Paper/Book"),
-    "scissors":     (2, "Cardboard/Paper"),
-    "suitcase":     (2, "Cardboard Box"),
-    "cell phone":   (3, "E-Waste"),
-    "laptop":       (3, "E-Waste"),
-    "remote":       (3, "E-Waste"),
-    "keyboard":     (3, "E-Waste"),
-    "mouse":        (3, "E-Waste"),
-    "tv":           (3, "E-Waste"),
+    "book":         (3, "Paper/Book"),
+    "scissors":     (3, "Cardboard/Paper"),
+    "suitcase":     (3, "Cardboard Box"),
+    "cell phone":   (2, "E-Waste"),
+    "laptop":       (2, "E-Waste"),
+    "remote":       (2, "E-Waste"),
+    "keyboard":     (2, "E-Waste"),
+    "mouse":        (2, "E-Waste"),
+    "tv":           (2, "E-Waste"),
     "banana":       (-1, "Organic ❌"),
     "apple":        (-1, "Organic ❌"),
     "orange":       (-1, "Organic ❌"),
@@ -81,25 +86,48 @@ YOLO_WASTE_MAP = {
 }
 
 # ── Sidebar config ───────────────────────────────────────────────────────────
+
+# ── Shared sidebar ────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Bin Monitor Settings")
     st.markdown("""
-    <div style="font-size:0.75rem;color:#6b8f74;line-height:1.8;">
-    <b style="color:#e8ede9;">Bin Zones (left→right):</b><br>
-    🔵 Bin 1 — Plastic & Metal<br>
-    🟢 Bin 2 — Glass & Ceramic<br>
-    🟡 Bin 3 — Paper & Cardboard<br>
-    🔴 Bin 4 — Hazardous & E-Waste
+    <div style="padding:1.2rem 0 1.2rem 0;border-bottom:1px solid #1e2e24;margin-bottom:1rem;">
+        <div style="font-size:1.5rem;font-weight:700;color:#e8ede9;letter-spacing:-0.02em;">♻️ CycleIQ</div>
+        <div style="font-size:0.7rem;color:#4ade80;font-family:'DM Mono',monospace;margin-top:3px;">Delhi Waste Intelligence</div>
+        <div style="margin-top:0.75rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <span style="background:#0d2010;border:1px solid #4ade8030;color:#4ade80;font-size:0.62rem;padding:1px 7px;border-radius:10px;">IoT Live</span>
+            <span style="background:#0d1a2e;border:1px solid #60a5fa30;color:#60a5fa;font-size:0.62rem;padding:1px 7px;border-radius:10px;">YOLOv8</span>
+            <span style="background:#1a0f00;border:1px solid #fbbf2430;color:#fbbf24;font-size:0.62rem;padding:1px 7px;border-radius:10px;">OR-Tools</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-
-    confidence_threshold = st.slider("Detection Confidence", 0.1, 0.9, 0.25, 0.05)
-    process_every_n = st.slider("Process every N frames", 1, 10, 3)
-    ward_id = st.selectbox("Award points to ward", 
-        ["W001","W002","W003","W004","W005","W006","W007","W008",
-         "W009","W010","W011","W012","W013","W014","W015","W016",
-         "W017","W018","W019","W020"], index=0)
-
+    st.markdown('<div style="font-size:0.65rem;color:#4ade80;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.4rem;padding-left:2px;">Main</div>', unsafe_allow_html=True)
+    st.page_link("app.py", label="Live Overview", icon="📊")
+    st.page_link("pages/0_home.py", label="About CycleIQ", icon="ℹ️")
+    st.page_link("pages/1_waste_map.py", label="Waste Map", icon="🗺️")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">Intelligence</div>', unsafe_allow_html=True)
+    st.page_link("pages/2_forecasting.py", label="Forecasting", icon="📈")
+    st.page_link("pages/3_routes.py", label="Route Optimizer", icon="🛣️")
+    st.page_link("pages/4_llm_chat.py", label="AI Assistant", icon="🤖")
+    st.page_link("pages/6_cv_classify.py", label="Waste Classifier", icon="📷")
+    st.page_link("pages/9_bin_monitor.py", label="Bin Monitor", icon="🎥")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">People</div>', unsafe_allow_html=True)
+    st.page_link("pages/5_citizens.py", label="Citizens & Rewards", icon="👥")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">Operations</div>', unsafe_allow_html=True)
+    st.page_link("pages/8_driver_view.py", label="Driver View", icon="🚛")
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="background:#0d1410;border:1px solid #1e2e24;border-radius:10px;padding:0.75rem;font-size:0.72rem;">
+        <div style="color:#4ade80;font-weight:600;margin-bottom:0.5rem;">System Status</div>
+        <div style="color:#6b8f74;line-height:2;">
+            <div>🟢 API &nbsp;<span style="color:#4ade80">Online</span></div>
+            <div>🟢 Database &nbsp;<span style="color:#4ade80">Neon PG</span></div>
+            <div>🟢 LLM &nbsp;<span style="color:#4ade80">Groq/Llama</span></div>
+            <div>🟡 CV &nbsp;<span style="color:#fbbf24">YOLOv8n</span></div>
+            <div>🟢 Forecast &nbsp;<span style="color:#4ade80">Prophet</span></div>
+            <div>🟢 Routes &nbsp;<span style="color:#4ade80">OR-Tools</span></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 # ── Upload ───────────────────────────────────────────────────────────────────
 uploaded_video = st.file_uploader(
     "Upload bin sorting video", 
@@ -122,6 +150,8 @@ if not uploaded_video:
 if st.button("▶ Analyse Video", use_container_width=False):
     import cv2
     import numpy as np
+    confidence_threshold = 0.15
+    process_every_n = 2
 
     # Save uploaded video to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
@@ -189,16 +219,20 @@ if st.button("▶ Analyse Video", use_container_width=False):
         for i, (x1, x2) in enumerate(zone_boundaries):
             cfg = BIN_CONFIG[i]
             color = cfg["color"]
-            # Semi-transparent zone fill at top (bin area ~top 45% of frame)
+            top_off = int(frame_h * cfg.get("top_offset", 0.02))
+            bin_bottom = int(frame_h * 0.50)
+            # Semi-transparent zone fill
             overlay = annotated.copy()
-            cv2.rectangle(overlay, (x1, 0), (x2, int(frame_h * 0.45)), color, -1)
+            cv2.rectangle(overlay, (x1, top_off), (x2, bin_bottom), color, -1)
             cv2.addWeighted(overlay, 0.12, annotated, 0.88, 0, annotated)
             # Zone border line
-            cv2.line(annotated, (x2, 0), (x2, int(frame_h * 0.45)), color, 2)
+            cv2.line(annotated, (x2, top_off), (x2, bin_bottom), color, 2)
+            cv2.line(annotated, (x1, top_off), (x2, top_off), color, 1)
+            cv2.line(annotated, (x1, bin_bottom), (x2, bin_bottom), color, 1)
             # Bin label
             label = cfg["label"]
-            cv2.rectangle(annotated, (x1 + 4, 4), (x1 + 4 + len(label)*11 + 8, 34), (10, 16, 12), -1)
-            cv2.putText(annotated, label, (x1 + 8, 26),
+            cv2.rectangle(annotated, (x1 + 4, top_off + 4), (x1 + 4 + len(label)*11 + 8, top_off + 34), (10, 16, 12), -1)
+            cv2.putText(annotated, label, (x1 + 8, top_off + 26),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
         # Run YOLO every N frames

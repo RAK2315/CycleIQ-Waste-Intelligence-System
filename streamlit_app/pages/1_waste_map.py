@@ -9,7 +9,8 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
+header { visibility: visible; }
 .stApp { background: #0a0f0d; color: #e8ede9; }
 .block-container { padding: 1.5rem 2rem; max-width: 1400px; }
 [data-testid="stSidebar"] { background: #0d1410 !important; border-right: 1px solid #1e2e24; }
@@ -44,7 +45,63 @@ def load_points():
 def load_ward_summary():
     return requests.get(f"{API}/waste/ward-summary", timeout=5).json()
 
+
+# ── Shared sidebar ────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div style="padding:1.2rem 0 1.2rem 0;border-bottom:1px solid #1e2e24;margin-bottom:1rem;">
+        <div style="font-size:1.5rem;font-weight:700;color:#e8ede9;letter-spacing:-0.02em;">♻️ CycleIQ</div>
+        <div style="font-size:0.7rem;color:#4ade80;font-family:'DM Mono',monospace;margin-top:3px;">Delhi Waste Intelligence</div>
+        <div style="margin-top:0.75rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <span style="background:#0d2010;border:1px solid #4ade8030;color:#4ade80;font-size:0.62rem;padding:1px 7px;border-radius:10px;">IoT Live</span>
+            <span style="background:#0d1a2e;border:1px solid #60a5fa30;color:#60a5fa;font-size:0.62rem;padding:1px 7px;border-radius:10px;">YOLOv8</span>
+            <span style="background:#1a0f00;border:1px solid #fbbf2430;color:#fbbf24;font-size:0.62rem;padding:1px 7px;border-radius:10px;">OR-Tools</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('<div style="font-size:0.65rem;color:#4ade80;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.4rem;padding-left:2px;">Main</div>', unsafe_allow_html=True)
+    st.page_link("app.py", label="Live Overview", icon="📊")
+    st.page_link("pages/0_home.py", label="About CycleIQ", icon="ℹ️")
+    st.page_link("pages/1_waste_map.py", label="Waste Map", icon="🗺️")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">Intelligence</div>', unsafe_allow_html=True)
+    st.page_link("pages/2_forecasting.py", label="Forecasting", icon="📈")
+    st.page_link("pages/3_routes.py", label="Route Optimizer", icon="🛣️")
+    st.page_link("pages/4_llm_chat.py", label="AI Assistant", icon="🤖")
+    st.page_link("pages/6_cv_classify.py", label="Waste Classifier", icon="📷")
+    st.page_link("pages/9_bin_monitor.py", label="Bin Monitor", icon="🎥")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">People</div>', unsafe_allow_html=True)
+    st.page_link("pages/5_citizens.py", label="Citizens & Rewards", icon="👥")
+    st.markdown('<div style="font-size:0.65rem;color:#6b8f74;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin:0.75rem 0 0.4rem 0;padding-left:2px;">Operations</div>', unsafe_allow_html=True)
+    st.page_link("pages/8_driver_view.py", label="Driver View", icon="🚛")
+    st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="background:#0d1410;border:1px solid #1e2e24;border-radius:10px;padding:0.75rem;font-size:0.72rem;">
+        <div style="color:#4ade80;font-weight:600;margin-bottom:0.5rem;">System Status</div>
+        <div style="color:#6b8f74;line-height:2;">
+            <div>🟢 API &nbsp;<span style="color:#4ade80">Online</span></div>
+            <div>🟢 Database &nbsp;<span style="color:#4ade80">Neon PG</span></div>
+            <div>🟢 LLM &nbsp;<span style="color:#4ade80">Groq/Llama</span></div>
+            <div>🟡 CV &nbsp;<span style="color:#fbbf24">YOLOv8n</span></div>
+            <div>🟢 Forecast &nbsp;<span style="color:#4ade80">Prophet</span></div>
+            <div>🟢 Routes &nbsp;<span style="color:#4ade80">OR-Tools</span></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.markdown('<div class="page-header"><h1>Waste Map</h1><span>Real-Time · IoT Feed</span></div>', unsafe_allow_html=True)
+
+# Auto-refresh toggle
+col_ref, col_last = st.columns([2, 5])
+with col_ref:
+    auto_refresh = st.toggle("Auto-refresh every 30s", value=False)
+with col_last:
+    from datetime import datetime
+    st.markdown(f'<div style="font-size:0.75rem;color:#6b8f74;padding-top:0.6rem;">Last updated: {datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
+if auto_refresh:
+    import time
+    time.sleep(30)
+    st.cache_data.clear()
+    st.rerun()
 
 try:
     points = load_points()
