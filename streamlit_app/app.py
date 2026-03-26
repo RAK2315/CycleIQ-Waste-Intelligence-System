@@ -41,7 +41,10 @@ import plotly.graph_objects as go
 import pandas as pd
 import sys, os, numpy as np
 from datetime import datetime, timedelta
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Works both locally and on Streamlit Cloud
+_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 from data.real_data import get_all_wards_summary, get_ward_waste_stats, WARD_REAL_DATA, BASELINE_LANDFILL_RATE, CYCLEIQ_LANDFILL_RATE, BASELINE_RECYCLING_RATE, CYCLEIQ_RECYCLING_RATE, BASELINE_COMPOST_RATE, CYCLEIQ_COMPOST_RATE
 
 import os, requests as _req

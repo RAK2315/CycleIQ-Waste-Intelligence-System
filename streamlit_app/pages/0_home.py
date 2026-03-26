@@ -1,6 +1,8 @@
 import streamlit as st
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 from data.real_data import get_all_wards_summary, DELHI_TOTAL_WASTE_TPD
 
 st.markdown("""

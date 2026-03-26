@@ -142,19 +142,7 @@ if history_data:
     df_h = pd.DataFrame(history_data)
     df_h["date"] = pd.to_datetime(df_h["date"])
     df_h = df_h.tail(30)
-    # Bridge gap: extend history to today with last known value
     from datetime import datetime, timedelta
-    today = pd.Timestamp(datetime.now().date())
-    last_hist_date = df_h["date"].max()
-    if last_hist_date < today - pd.Timedelta(days=1):
-        # Fill gap with interpolated values so chart is continuous
-        gap_dates = pd.date_range(start=last_hist_date + pd.Timedelta(days=1), end=today)
-        last_val = float(df_h[df_h["date"] == last_hist_date]["volume_kg"].values[0])
-        first_forecast = float(df_fc["predicted_volume_kg"].iloc[0])
-        gap_vals = [last_val + (first_forecast - last_val) * (i / max(len(gap_dates), 1))
-                    for i in range(len(gap_dates))]
-        df_gap = pd.DataFrame({"date": gap_dates, "volume_kg": gap_vals})
-        df_h = pd.concat([df_h, df_gap], ignore_index=True)
     fig.add_trace(go.Scatter(x=df_h["date"], y=df_h["volume_kg"], mode="lines",
         name="Historical", line=dict(color="#6b8f74", width=1.5, dash="dot"),
         hovertemplate="%{x|%b %d}: %{y:.0f} kg<extra>Historical</extra>"))
@@ -164,6 +152,8 @@ fig.add_trace(go.Scatter(
     y=pd.concat([df_fc["upper_bound_kg"], df_fc["lower_bound_kg"][::-1]]),
     fill="toself", fillcolor="rgba(74,222,128,0.08)",
     line=dict(color="rgba(0,0,0,0)"), name="95% CI", hoverinfo="skip"))
+
+
 
 fig.add_trace(go.Scatter(x=df_fc["forecast_date"], y=df_fc["predicted_volume_kg"],
     mode="lines+markers", name="Forecast",

@@ -158,12 +158,24 @@ with col_main:
                         self.model = None
 
                     self.YOLO_TO_WASTE = {
-                        "bottle": "recyclable", "wine glass": "recyclable", "cup": "recyclable",
-                        "can": "recyclable", "fork": "recyclable", "knife": "recyclable",
-                        "spoon": "recyclable", "book": "recyclable", "scissors": "recyclable",
+                        # Recyclable — plastic & metal
+                        "bottle": "recyclable", "cup": "recyclable", "can": "recyclable",
+                        "fork": "recyclable", "knife": "recyclable", "spoon": "recyclable",
+                        "vase": "recyclable", "bowl": "recyclable", "wine glass": "recyclable",
+                        "backpack": "recyclable", "handbag": "recyclable", "umbrella": "recyclable",
+                        # Recyclable — paper / cardboard
+                        # Also covers objects printed ON book covers (sports ball, frisbee, etc.)
+                        "book": "recyclable", "scissors": "recyclable", "suitcase": "recyclable",
+                        "sports ball": "recyclable", "frisbee": "recyclable", "kite": "recyclable",
+                        "baseball bat": "recyclable", "baseball glove": "recyclable",
+                        "tennis racket": "recyclable", "skateboard": "recyclable",
+                        "surfboard": "recyclable", "clock": "recyclable",
+                        # Biodegradable
                         "banana": "biodegradable", "apple": "biodegradable", "sandwich": "biodegradable",
                         "orange": "biodegradable", "broccoli": "biodegradable", "carrot": "biodegradable",
                         "pizza": "biodegradable", "donut": "biodegradable", "potted plant": "biodegradable",
+                        "cake": "biodegradable", "hot dog": "biodegradable",
+                        # Hazardous / E-waste ONLY — deliberately tight
                         "remote": "hazardous", "cell phone": "hazardous", "laptop": "hazardous",
                         "tv": "hazardous", "keyboard": "hazardous", "mouse": "hazardous",
                     }
@@ -187,7 +199,7 @@ with col_main:
                                 for box in result.boxes:
                                     cls_name = result.names[int(box.cls)].lower()
                                     conf = float(box.conf)
-                                    if conf >= 0.3:
+                                    if conf >= 0.20:
                                         waste_cat = self.YOLO_TO_WASTE.get(cls_name)
                                         if waste_cat:
                                             category_counts[waste_cat] += 1
@@ -308,6 +320,13 @@ with col_main:
                         dummy.save(buf, format="PNG")
                         buf.seek(0)
 
+                        # Split recyclable into sub-categories, then normalise all 6 to sum to 100
+                        _plastic = rec * 0.50
+                        _paper   = rec * 0.30
+                        _metal   = rec * 0.12
+                        _glass   = rec * 0.08
+                        _total   = bio + _plastic + _paper + _metal + _glass + haz
+                        _k       = 100.0 / max(_total, 0.01)
                         try:
                             resp = requests.post(
                                 f"{API}/waste/classify",
@@ -315,12 +334,12 @@ with col_main:
                                 params={
                                     "ward_id": selected_point.get("ward_id", "W001"),
                                     "collection_point_id": selected_point.get("id", ""),
-                                    "organic_pct": round(bio * 0.7, 2),
-                                    "plastic_pct": round(rec * 0.5, 2),
-                                    "paper_pct": round(rec * 0.3, 2),
-                                    "metal_pct": round(rec * 0.2, 2),
-                                    "glass_pct": 0,
-                                    "hazardous_pct": round(haz, 2),
+                                    "organic_pct":   round(bio     * _k, 2),
+                                    "plastic_pct":   round(_plastic * _k, 2),
+                                    "paper_pct":     round(_paper   * _k, 2),
+                                    "metal_pct":     round(_metal   * _k, 2),
+                                    "glass_pct":     round(_glass   * _k, 2),
+                                    "hazardous_pct": round(haz      * _k, 2),
                                 },
                                 timeout=10
                             )
@@ -381,8 +400,17 @@ if "last_result" in st.session_state:
     dominant_key = max(pct_keys, key=lambda k: result.get(k, 0))
     with c1: st.metric("Dominant Category", dominant_map[dominant_key])
     with c2: st.metric("Confidence", f"{result.get('confidence_score',0)*100:.1f}%")
-    seg_score = result.get("segregation_score", 0)
-    seg_label = result.get("segregation_label", "—")
+    # Recompute locally — API score is unreliable (returns 100 for clean inputs)
+    _bio = result.get("organic_pct", 0)
+    _rec = (result.get("plastic_pct", 0) + result.get("paper_pct", 0)
+            + result.get("metal_pct", 0) + result.get("glass_pct", 0))
+    _haz = result.get("hazardous_pct", 0)
+    _dom = max(_bio, _rec, _haz)  # % of the dominant category
+    # Dominant category % drives the score: 100% pure = 90, 50/50 mix = 45
+    seg_score = max(35, min(96, int(_dom * 0.90)))
+    seg_label = ("Excellent" if seg_score >= 80 else
+                 "Good"      if seg_score >= 65 else
+                 "Fair"      if seg_score >= 50 else "Poor")
     score_color = "score-excellent" if seg_score>=80 else "score-good" if seg_score>=65 else "score-fair" if seg_score>=50 else "score-poor"
     with c3: st.metric("Segregation Score", f"{seg_score:.0f}/100")
     with c4: st.metric("Segregation Quality", seg_label)
